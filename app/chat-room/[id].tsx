@@ -27,25 +27,22 @@ export default function ChatRoomScreen() {
   const [messageText, setMessageText] = useState('');
   const [isWishlistDrawerOpen, setIsWishlistDrawerOpen] = useState(false);
   
-  // Upgraded message state to support custom "wishlist" message types
   const [messages, setMessages] = useState<any[]>([
     { id: '1', type: 'text', text: 'Hello! How can we help you today?', sender: 'them', time: '9:58 AM' },
   ]);
 
-  // Standard Text Message
   const sendMessage = () => {
     if (messageText.trim().length === 0) return;
     setMessages([...messages, { id: Date.now().toString(), type: 'text', text: messageText, sender: 'me', time: 'Now' }]);
     setMessageText('');
   };
 
-  // Special Wishlist Card Message
   const sendWishlistItem = (product: any) => {
     setMessages([
       ...messages, 
       { id: Date.now().toString(), type: 'wishlist', product: product, sender: 'me', time: 'Now' }
     ]);
-    setIsWishlistDrawerOpen(false); // Close drawer after sending
+    setIsWishlistDrawerOpen(false); 
   };
 
   const renderMessage = ({ item }: any) => {
@@ -59,12 +56,10 @@ export default function ChatRoomScreen() {
           isMe ? styles.bubbleMe : styles.bubbleThem
         ]}>
           
-          {/* Render standard text */}
           {item.type === 'text' && (
             <Text style={[styles.messageText, { color: isMe ? '#fff' : theme.text }]}>{item.text}</Text>
           )}
 
-          {/* Render special Wishlist product card */}
           {item.type === 'wishlist' && (
             <View style={styles.wishlistCardMessage}>
               <Text style={[styles.wishlistIntroText, { color: isMe ? 'rgba(255,255,255,0.9)' : theme.text }]}>
@@ -83,7 +78,6 @@ export default function ChatRoomScreen() {
                 </View>
               </View>
 
-              {/* Buy Button (Only really makes sense if the other person is viewing it, but shows the UI) */}
               {!isMe && (
                 <TouchableOpacity style={[styles.giftBtn, { backgroundColor: theme.primary }]} activeOpacity={0.8}>
                   <ShoppingCart size={14} color="#fff" />
@@ -104,7 +98,6 @@ export default function ChatRoomScreen() {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <UniversalBackground />
 
-      {/* Header */}
       <View style={[styles.chatHeader, { paddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight! + 10 }]}>
         <BlurView intensity={80} tint={colorScheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
         <View style={styles.headerContent}>
@@ -126,9 +119,13 @@ export default function ChatRoomScreen() {
         <View style={{ position: 'absolute', bottom: 0, width: '100%', height: 1, backgroundColor: theme.text, opacity: 0.05 }} />
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* --- FIXED KEYBOARD AVOIDING VIEW FOR MAIN CHAT --- */}
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 25}
+      >
         
-        {/* Messages List */}
         <FlatList
           data={messages}
           keyExtractor={(item) => item.id}
@@ -143,12 +140,10 @@ export default function ChatRoomScreen() {
           }
         />
 
-        {/* Bottom Input Bar */}
         <View style={styles.inputContainer}>
           <BlurView intensity={80} tint={colorScheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
           <View style={styles.inputRow}>
             
-            {/* --- NEW: WISHLIST GIFT BUTTON --- */}
             <TouchableOpacity style={styles.attachBtn} onPress={() => setIsWishlistDrawerOpen(true)}>
               <Gift size={20} color={theme.primary} />
             </TouchableOpacity>
@@ -180,9 +175,12 @@ export default function ChatRoomScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      {/* --- WISHLIST DRAWER (BOTTOM MODAL) --- */}
+      {/* --- FIXED KEYBOARD AVOIDING VIEW FOR DRAWER MODAL --- */}
       <Modal visible={isWishlistDrawerOpen} transparent animationType="slide">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalContainer}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+          style={styles.modalContainer}
+        >
           
           <TouchableOpacity 
             style={StyleSheet.absoluteFill} 
@@ -256,7 +254,6 @@ const styles = StyleSheet.create({
   messageText: { fontSize: 14, lineHeight: 20, marginBottom: 2 },
   timeText: { fontSize: 9, alignSelf: 'flex-end' },
   
-  // Embedded Wishlist Card Styles
   wishlistCardMessage: { minWidth: 200 },
   wishlistIntroText: { fontSize: 13, marginBottom: 8, fontWeight: '500' },
   embeddedProductCard: { flexDirection: 'row', alignItems: 'center', padding: 8, borderRadius: 12, marginBottom: 8 },
@@ -274,7 +271,6 @@ const styles = StyleSheet.create({
   textInput: { flex: 1, fontSize: 15, maxHeight: 80, padding: 0, margin: 0 },
   sendBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
 
-  // Drawer Styles
   modalContainer: { flex: 1, justifyContent: 'flex-end' },
   drawerContent: { borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24, elevation: 20, maxHeight: '60%' },
   drawerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
