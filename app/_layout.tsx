@@ -1,24 +1,31 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+// app/_layout.tsx
+import React from 'react';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+import { useColorScheme, StatusBar } from 'react-native';
+import { Colors } from '../constants/Colors';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  // Automatically detects if the physical phone is in Light or Dark mode
+  const colorScheme = useColorScheme(); 
+  const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+    <>
+      {/* Changes the battery/wifi icons to contrast with the background */}
+      <StatusBar 
+        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} 
+        backgroundColor={theme.background} 
+      />
+      
+      {/* The main app wrapper */}
+      <Stack 
+        screenOptions={{ 
+          headerShown: false, // Hides the default ugly header
+          contentStyle: { backgroundColor: theme.background } 
+        }}
+      >
+        <Stack.Screen name="index" />
       </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    </>
   );
 }
