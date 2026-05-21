@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "sweet-bites-native",
-    "slug": "sweet-bites-native",
+    "name": "Meenah",
+    "slug": "meenah",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "sweetbitesnative",
+    "scheme": "meenah",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -18,7 +18,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.mifimn.sweetbitesnative"
+      "package": "com.mifimn.meenah"
     },
     "web": {
       "output": "static",
