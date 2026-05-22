@@ -119,7 +119,12 @@ export default function ChatScreen() {
 
       {/* --- NEW CHAT DRAWER (BOTTOM MODAL) --- */}
       <Modal visible={isDrawerOpen} transparent animationType="slide">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalContainer}>
+        {/* FIXED: Switched Android to 'padding' and added vertical offset */}
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'padding'} 
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 25}
+          style={styles.modalContainer}
+        >
           
           {/* Blur Backdrop (Click to close) */}
           <TouchableOpacity 

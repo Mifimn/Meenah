@@ -11,7 +11,6 @@ import { Colors } from '../../constants/Colors';
 import UniversalBackground from '../../components/UniversalBackground';
 import { ArrowLeft, Send, Paperclip, Lock, Gift, ShoppingCart, X } from 'lucide-react-native';
 
-// --- DUMMY WISHLIST DATA ---
 const DUMMY_WISHLIST = [
   { id: 'w1', name: 'Pink Velvet Cake', price: 12.00, image: 'https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?w=800&q=80' },
   { id: 'w2', name: 'Strawberry Cookies', price: 8.50, image: 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=800&q=80' },
@@ -119,11 +118,11 @@ export default function ChatRoomScreen() {
         <View style={{ position: 'absolute', bottom: 0, width: '100%', height: 1, backgroundColor: theme.text, opacity: 0.05 }} />
       </View>
 
-      {/* --- FIXED KEYBOARD AVOIDING VIEW FOR MAIN CHAT --- */}
+      {/* FIXED: Switched Android behavior to 'padding' and added a 30px upward push */}
       <KeyboardAvoidingView 
         style={{ flex: 1 }} 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 25}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 30}
       >
         
         <FlatList
@@ -145,17 +144,17 @@ export default function ChatRoomScreen() {
           <View style={styles.inputRow}>
             
             <TouchableOpacity style={styles.attachBtn} onPress={() => setIsWishlistDrawerOpen(true)}>
-              <Gift size={20} color={theme.primary} />
+              <Gift size={22} color={theme.primary} />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.attachBtn}>
-              <Paperclip size={20} color={theme.icon} />
+              <Paperclip size={22} color={theme.icon} />
             </TouchableOpacity>
             
             <View style={[styles.textInputWrapper, { backgroundColor: theme.surface }]}>
               <TextInput 
                 style={[styles.textInput, { color: theme.text }, Platform.OS === 'web' && { outlineStyle: 'none' } as any]}
-                placeholder="Type..."
+                placeholder="Type a message..."
                 placeholderTextColor={theme.icon}
                 value={messageText}
                 onChangeText={setMessageText}
@@ -169,16 +168,15 @@ export default function ChatRoomScreen() {
               onPress={sendMessage}
               activeOpacity={0.8}
             >
-              <Send size={16} color={messageText.length > 0 ? '#fff' : theme.icon} style={{ marginLeft: 2 }} />
+              <Send size={18} color={messageText.length > 0 ? '#fff' : theme.icon} style={{ marginLeft: 2 }} />
             </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
 
-      {/* --- FIXED KEYBOARD AVOIDING VIEW FOR DRAWER MODAL --- */}
       <Modal visible={isWishlistDrawerOpen} transparent animationType="slide">
         <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'padding'} 
           style={styles.modalContainer}
         >
           
@@ -241,18 +239,20 @@ const styles = StyleSheet.create({
   headerName: { fontSize: 15, fontWeight: 'bold' },
   headerStatus: { fontSize: 11, fontWeight: '600' },
   
-  messageListContent: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 110 : 120, paddingBottom: 10 },
+  messageListContent: { paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 110 : 120, paddingBottom: 20 },
   encryptionBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 8, borderRadius: 12, marginBottom: 20, marginHorizontal: 20 },
   encryptionText: { fontSize: 10, textAlign: 'center', lineHeight: 14 },
   
-  messageWrapper: { marginBottom: 12, width: '100%' },
+  messageWrapper: { marginBottom: 14, width: '100%' },
   messageMe: { alignItems: 'flex-end' },
   messageThem: { alignItems: 'flex-start' },
-  messageBubble: { maxWidth: '75%', paddingVertical: 10, paddingHorizontal: 14, borderRadius: 18, elevation: 1 },
+  // FIXED: Increased padding and width for the sent message bubble
+  messageBubble: { maxWidth: '80%', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 20, elevation: 1 },
   bubbleMe: { borderBottomRightRadius: 4 },
   bubbleThem: { borderBottomLeftRadius: 4 },
-  messageText: { fontSize: 14, lineHeight: 20, marginBottom: 2 },
-  timeText: { fontSize: 9, alignSelf: 'flex-end' },
+  // FIXED: Increased font size and line height for text
+  messageText: { fontSize: 15, lineHeight: 22, marginBottom: 4 },
+  timeText: { fontSize: 10, alignSelf: 'flex-end', fontWeight: '500' },
   
   wishlistCardMessage: { minWidth: 200 },
   wishlistIntroText: { fontSize: 13, marginBottom: 8, fontWeight: '500' },
@@ -265,11 +265,13 @@ const styles = StyleSheet.create({
   giftBtnText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
 
   inputContainer: { overflow: 'hidden', borderTopLeftRadius: 24, borderTopRightRadius: 24, elevation: 15 },
-  inputRow: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 12, paddingTop: 12, paddingBottom: Platform.OS === 'ios' ? 28 : 12, gap: 6 },
-  attachBtn: { width: 36, height: 40, justifyContent: 'center', alignItems: 'center' },
-  textInputWrapper: { flex: 1, minHeight: 40, maxHeight: 100, borderRadius: 20, paddingHorizontal: 14, paddingVertical: Platform.OS === 'ios' ? 10 : 8, justifyContent: 'center' },
-  textInput: { flex: 1, fontSize: 15, maxHeight: 80, padding: 0, margin: 0 },
-  sendBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  // FIXED: Increased paddingBottom to push the input higher off the bottom edge
+  inputRow: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 12, paddingTop: 14, paddingBottom: Platform.OS === 'ios' ? 34 : 26, gap: 8 },
+  attachBtn: { width: 40, height: 46, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
+  // FIXED: Increased minHeight and internal padding for the text box
+  textInputWrapper: { flex: 1, minHeight: 50, maxHeight: 120, borderRadius: 25, paddingHorizontal: 16, paddingVertical: Platform.OS === 'ios' ? 14 : 12, justifyContent: 'center' },
+  textInput: { flex: 1, fontSize: 16, maxHeight: 90, padding: 0, margin: 0 },
+  sendBtn: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
 
   modalContainer: { flex: 1, justifyContent: 'flex-end' },
   drawerContent: { borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24, elevation: 20, maxHeight: '60%' },
