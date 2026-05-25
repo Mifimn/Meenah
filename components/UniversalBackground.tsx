@@ -1,6 +1,6 @@
 // components/UniversalBackground.tsx
 import React, { useRef, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Platform } from 'react-native';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useColorScheme } from 'react-native';
@@ -69,6 +69,14 @@ export default function UniversalBackground() {
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
+  // 🚨 THE FIX: Replit's Web Preview gets a safe, invisible fallback
+  if (Platform.OS === 'web') {
+    return (
+      <View style={[styles.backgroundContainer, { backgroundColor: theme.background }]} pointerEvents="none" />
+    );
+  }
+
+  // 📱 THE REAL DEAL: Android gets the 3D Starfield
   return (
     <View style={styles.backgroundContainer} pointerEvents="none">
       <Canvas camera={{ position: [0, 0, 5] }}>

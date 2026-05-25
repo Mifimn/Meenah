@@ -3,6 +3,7 @@ import React from 'react';
 import { Stack } from 'expo-router';
 import { useColorScheme, StatusBar } from 'react-native';
 import { Colors } from '../constants/Colors';
+import { AuthProvider } from '../context/AuthContext';
 
 export default function RootLayout() {
   // Automatically detects if the physical phone is in Light or Dark mode
@@ -10,7 +11,7 @@ export default function RootLayout() {
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
   return (
-    <>
+    <AuthProvider>
       {/* Changes the battery/wifi icons to contrast with the background */}
       <StatusBar 
         barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} 
@@ -25,7 +26,8 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="index" />
+        <Stack.Screen name="auth" />
       </Stack>
-    </>
+    </AuthProvider>
   );
 }

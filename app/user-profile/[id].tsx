@@ -2,18 +2,21 @@
 import React from 'react';
 import { 
   StyleSheet, Text, View, TouchableOpacity, Platform, 
-  StatusBar, Image, ScrollView 
+  StatusBar, ScrollView, ActivityIndicator 
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp, SlideInRight } from 'react-native-reanimated';
 import { useColorScheme } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import UniversalBackground from '../../components/UniversalBackground';
 import { BlurView } from 'expo-blur';
 import { 
-  ArrowLeft, MessageSquare, ShieldCheck, CalendarDays, 
-  Phone, CreditCard, Star, MapPin, ChevronRight, Image as ImageIcon
+  ArrowLeft, MessageCircle, PhoneCall, Wallet, 
+  ShieldCheck, Star, Calendar, ChevronRight, Image as ImageIcon
 } from 'lucide-react-native';
+import { supabase } from '../../lib/supabase';
+import { useOfflineData } from '../../hooks/useOfflineData';
+import { useAuth } from '../../context/AuthContext'; // Added Auth context
 
 const SHARED_MEDIA = [
   'https://images.unsplash.com/photo-1621236378699-859efab66045?w=500&q=80',
@@ -24,169 +27,188 @@ const SHARED_MEDIA = [
 
 export default function UserProfileScreen() {
   const { id, name } = useLocalSearchParams();
+  const { user } = useAuth(); // Grab the logged-in user
   const router = useRouter();
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
+
+  // 🚀 FIXED OFFLINE HOOK: Finds the correct user ID before fetching
+  const { data: profile, loading } = useOfflineData(`profile_view_${id}`, async () => {
+    if (!id || !user) return null;
+
+    // 1. Check if the 'id' we received is actually a conversation ID
+    const { data: convo } = await supabase.from('conversations').select('participant1_id, participant2_id').eq('id', id).single();
+    
+    let targetUserId = id; // Default to assuming it's a direct user ID
+    
+    if (convo) {
+      // 2. If it IS a conversation, figure out who the OTHER person is
+      targetUserId = convo.participant1_id === user.id ? convo.participant2_id : convo.participant1_id;
+    }
+
+    // 3. Fetch the real Member ID using the correct user ID
+    const { data } = await supabase.from('profiles').select('member_id').eq('id', targetUserId).single();
+    return data;
+  });
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <UniversalBackground />
 
-      {/* Top Navigation */}
+      {/* Floating Back Button */}
       <View style={[styles.topNav, { paddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight! + 10 }]}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-          <BlurView intensity={40} tint={colorScheme === 'dark' ? 'dark' : 'light'} style={styles.glassButton}>
-            <ArrowLeft size={24} color={theme.text} />
+        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.8}>
+          <BlurView intensity={60} tint={colorScheme === 'dark' ? 'dark' : 'light'} style={styles.glassButton}>
+            <ArrowLeft size={22} color={theme.text} />
           </BlurView>
         </TouchableOpacity>
       </View>
 
-      <Animated.ScrollView 
-        entering={FadeInDown.duration(800)}
-        showsVerticalScrollIndicator={false} 
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Main Profile Card */}
-        <View style={[styles.profileCard, { backgroundColor: theme.surface }]}>
-          <View style={styles.avatarWrapper}>
-            <View style={[styles.avatarLarge, { backgroundColor: theme.primary }]} />
-            <View style={[styles.statusBadge, { borderColor: theme.surface }]} />
-          </View>
-          
-          <Text style={[styles.userName, { color: theme.text }]}>{name || "Meenah Member"}</Text>
-          <View style={styles.verifiedRow}>
-            <ShieldCheck size={14} color="#10B981" />
-            <Text style={[styles.memberId, { color: '#10B981' }]}>Verified Buyer • #{id}</Text>
-          </View>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
+        
+        {/* Abstract Cover Photo Area */}
+        <Animated.View entering={FadeInDown.duration(600)} style={[styles.coverArea, { backgroundColor: theme.primary + '20' }]}>
+           <BlurView intensity={80} tint={colorScheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+        </Animated.View>
 
-          {/* Action Button Row */}
-          <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7} onPress={() => router.back()}>
-              <View style={[styles.actionIconBg, { backgroundColor: theme.primary }]}>
-                <MessageSquare size={20} color="#fff" />
+        <View style={styles.contentWrapper}>
+          
+          {/* Overlapping Avatar & Header */}
+          <Animated.View entering={FadeInUp.duration(600).delay(100)} style={styles.headerSection}>
+            <View style={styles.avatarContainer}>
+              <View style={[styles.avatarLarge, { backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center' }]}>
+                <Text style={{ color: '#fff', fontSize: 40, fontWeight: 'bold' }}>{(name as string)?.charAt(0) || 'M'}</Text>
               </View>
-              <Text style={[styles.actionText, { color: theme.text }]}>Message</Text>
+              <View style={[styles.verifiedBadge, { backgroundColor: theme.background }]}>
+                <ShieldCheck size={16} color="#10B981" />
+              </View>
+            </View>
+            
+            <View style={styles.titleArea}>
+              <Text style={[styles.userName, { color: theme.text }]}>{name || "Meenah Member"}</Text>
+              <Text style={[styles.memberTitle, { color: theme.icon }]}>Verified Member</Text>
+            </View>
+          </Animated.View>
+
+          {/* Action Pills */}
+          <Animated.View entering={FadeInUp.duration(600).delay(200)} style={styles.actionRow}>
+            <TouchableOpacity style={[styles.actionPill, styles.primaryPill, { backgroundColor: theme.primary }]} activeOpacity={0.8} onPress={() => router.back()}>
+              <MessageCircle size={18} color="#fff" />
+              <Text style={styles.primaryPillText}>Message</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7}>
-              <View style={[styles.actionIconBg, { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.icon + '30' }]}>
-                <Phone size={20} color={theme.primary} />
-              </View>
-              <Text style={[styles.actionText, { color: theme.text }]}>Call</Text>
+            <TouchableOpacity style={[styles.actionPill, { backgroundColor: theme.surface }]} activeOpacity={0.8}>
+              <PhoneCall size={18} color={theme.text} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7}>
-              <View style={[styles.actionIconBg, { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.icon + '30' }]}>
-                <CreditCard size={20} color={theme.primary} />
-              </View>
-              <Text style={[styles.actionText, { color: theme.text }]}>Pay</Text>
+            <TouchableOpacity style={[styles.actionPill, { backgroundColor: theme.surface }]} activeOpacity={0.8}>
+              <Wallet size={18} color={theme.text} />
             </TouchableOpacity>
-          </View>
-        </View>
+          </Animated.View>
 
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          <View style={[styles.statBox, { backgroundColor: theme.surface }]}>
-            <Star size={24} color="#F59E0B" style={styles.statIcon} />
-            <Text style={[styles.statValue, { color: theme.text }]}>2,450</Text>
-            <Text style={[styles.statLabel, { color: theme.icon }]}>Loyalty Points</Text>
-          </View>
-          <View style={[styles.statBox, { backgroundColor: theme.surface }]}>
-            <MapPin size={24} color={theme.primary} style={styles.statIcon} />
-            <Text style={[styles.statValue, { color: theme.text }]}>12</Text>
-            <Text style={[styles.statLabel, { color: theme.icon }]}>Total Orders</Text>
-          </View>
-        </View>
-
-        {/* Info List */}
-        <View style={[styles.infoList, { backgroundColor: theme.surface }]}>
-          <TouchableOpacity style={styles.infoRow} activeOpacity={0.7}>
-            <View style={styles.infoLeft}>
-              <CalendarDays size={20} color={theme.icon} style={{ marginRight: 12 }} />
-              <Text style={[styles.infoText, { color: theme.text }]}>Joined Meenah Network</Text>
+          {/* Glassmorphic Stats Panel */}
+          <Animated.View entering={FadeInUp.duration(600).delay(300)} style={[styles.statsPanel, { backgroundColor: theme.surface }]}>
+            <View style={styles.statItem}>
+              <View style={[styles.statIconWrapper, { backgroundColor: 'rgba(245, 158, 11, 0.1)' }]}>
+                <Star size={20} color="#F59E0B" />
+              </View>
+              <Text style={[styles.statValue, { color: theme.text }]}>2,450</Text>
+              <Text style={[styles.statLabel, { color: theme.icon }]}>Points</Text>
             </View>
-            <Text style={[styles.infoValue, { color: theme.icon }]}>Feb 2026</Text>
-          </TouchableOpacity>
-          
-          <View style={[styles.divider, { backgroundColor: theme.icon + '20' }]} />
-          
-          <TouchableOpacity style={styles.infoRow} activeOpacity={0.7}>
-            <View style={styles.infoLeft}>
-              <ImageIcon size={20} color={theme.icon} style={{ marginRight: 12 }} />
-              <Text style={[styles.infoText, { color: theme.text }]}>Shared Media</Text>
+
+            <View style={[styles.statDivider, { backgroundColor: theme.icon + '20' }]} />
+
+            <View style={styles.statItem}>
+              <View style={[styles.statIconWrapper, { backgroundColor: theme.primary + '15' }]}>
+                <ShieldCheck size={20} color={theme.primary} />
+              </View>
+              {loading ? (
+                <ActivityIndicator size="small" color={theme.primary} style={{ marginBottom: 2 }} />
+              ) : (
+                <Text style={[styles.statValue, { color: theme.text, fontSize: 16 }]} numberOfLines={1}>
+                  {profile?.member_id || 'Fetching...'}
+                </Text>
+              )}
+              <Text style={[styles.statLabel, { color: theme.icon }]}>Member ID</Text>
             </View>
-            <View style={styles.infoRight}>
-              <Text style={[styles.infoValue, { color: theme.icon }]}>43</Text>
-              <ChevronRight size={16} color={theme.icon} />
+
+            <View style={[styles.statDivider, { backgroundColor: theme.icon + '20' }]} />
+
+            <View style={styles.statItem}>
+              <View style={[styles.statIconWrapper, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                <Calendar size={20} color="#10B981" />
+              </View>
+              <Text style={[styles.statValue, { color: theme.text }]}>Feb</Text>
+              <Text style={[styles.statLabel, { color: theme.icon }]}>2026</Text>
             </View>
-          </TouchableOpacity>
+          </Animated.View>
+
+          {/* Media Grid Section */}
+          <Animated.View entering={FadeInUp.duration(600).delay(400)} style={styles.mediaSection}>
+            <View style={styles.sectionHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <ImageIcon size={20} color={theme.text} />
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>Shared Media</Text>
+              </View>
+              <TouchableOpacity style={styles.seeAllBtn}>
+                <Text style={[styles.seeAllText, { color: theme.primary }]}>See All</Text>
+                <ChevronRight size={16} color={theme.primary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.mediaGrid}>
+              {SHARED_MEDIA.map((uri, index) => (
+                <Animated.Image 
+                  key={index}
+                  entering={SlideInRight.delay(400 + (index * 100)).duration(500)}
+                  source={{ uri }} 
+                  style={styles.gridImage} 
+                />
+              ))}
+            </View>
+          </Animated.View>
+
         </View>
-
-        {/* Shared Media Horizontal Scroll */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
-          contentContainerStyle={styles.mediaScroll}
-        >
-          {SHARED_MEDIA.map((uri, index) => (
-            <Animated.Image 
-              key={index} 
-              entering={FadeInRight.delay(index * 100).duration(500)}
-              source={{ uri }} 
-              style={styles.mediaThumbnail} 
-            />
-          ))}
-          <TouchableOpacity style={[styles.viewAllMedia, { backgroundColor: theme.surface }]} activeOpacity={0.7}>
-            <Text style={[styles.viewAllText, { color: theme.primary }]}>View{'\n'}All</Text>
-          </TouchableOpacity>
-        </ScrollView>
-
-      </Animated.ScrollView>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topNav: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', paddingHorizontal: 24, zIndex: 10 },
+  topNav: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', paddingHorizontal: 20, zIndex: 10 },
   glassButton: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  scrollContent: { paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 120 : 140, paddingBottom: 60 },
   
-  // Profile Card
-  profileCard: { borderRadius: 30, padding: 24, alignItems: 'center', elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, marginBottom: 20 },
-  avatarWrapper: { position: 'relative', marginBottom: 16 },
-  avatarLarge: { width: 110, height: 110, borderRadius: 55, elevation: 5, shadowColor: '#FF69B4', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.3, shadowRadius: 10 },
-  statusBadge: { position: 'absolute', bottom: 4, right: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: '#10B981', borderWidth: 3 },
-  userName: { fontSize: 24, fontWeight: '900', marginBottom: 4 },
-  verifiedRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 24 },
-  memberId: { fontSize: 13, fontWeight: 'bold' },
+  coverArea: { height: 180, width: '100%', overflow: 'hidden', borderBottomLeftRadius: 40, borderBottomRightRadius: 40 },
+  contentWrapper: { paddingHorizontal: 20, marginTop: -60 },
+  
+  headerSection: { alignItems: 'center', marginBottom: 24 },
+  avatarContainer: { position: 'relative', marginBottom: 12 },
+  avatarLarge: { width: 120, height: 120, borderRadius: 60, borderWidth: 4, borderColor: 'transparent', elevation: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 15 },
+  verifiedBadge: { position: 'absolute', bottom: 5, right: 5, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', elevation: 5 },
+  
+  titleArea: { alignItems: 'center' },
+  userName: { fontSize: 26, fontWeight: '900', marginBottom: 4, letterSpacing: -0.5 },
+  memberTitle: { fontSize: 14, fontWeight: '600' },
 
-  // Action Buttons
-  actionRow: { flexDirection: 'row', justifyContent: 'center', gap: 30, width: '100%', paddingHorizontal: 10 },
-  actionBtn: { alignItems: 'center', gap: 8 },
-  actionIconBg: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', elevation: 2 },
-  actionText: { fontSize: 13, fontWeight: '600' },
+  actionRow: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 30 },
+  actionPill: { height: 50, borderRadius: 25, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, elevation: 2 },
+  primaryPill: { flex: 1, maxWidth: 200, gap: 8 },
+  primaryPillText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 
-  // Stats Grid
-  statsGrid: { flexDirection: 'row', gap: 16, marginBottom: 20 },
-  statBox: { flex: 1, borderRadius: 24, padding: 20, alignItems: 'center', elevation: 4 },
-  statIcon: { marginBottom: 12 },
-  statValue: { fontSize: 22, fontWeight: '900', marginBottom: 4 },
+  statsPanel: { flexDirection: 'row', borderRadius: 24, paddingVertical: 20, elevation: 2, marginBottom: 30 },
+  statItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  statIconWrapper: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  statValue: { fontSize: 20, fontWeight: '900', marginBottom: 2 },
   statLabel: { fontSize: 12, fontWeight: '600' },
+  statDivider: { width: 1, height: '60%', alignSelf: 'center' },
 
-  // Info List
-  infoList: { borderRadius: 24, padding: 8, elevation: 4, marginBottom: 24 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
-  infoLeft: { flexDirection: 'row', alignItems: 'center' },
-  infoRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  infoText: { fontSize: 15, fontWeight: '600' },
-  infoValue: { fontSize: 14, fontWeight: '500' },
-  divider: { height: 1, marginHorizontal: 16 },
-
-  // Media Scroll
-  mediaScroll: { gap: 12, paddingBottom: 10 },
-  mediaThumbnail: { width: 80, height: 80, borderRadius: 16 },
-  viewAllMedia: { width: 80, height: 80, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(150,150,150,0.2)', borderStyle: 'dashed' },
-  viewAllText: { fontSize: 13, fontWeight: 'bold', textAlign: 'center' }
+  mediaSection: { marginBottom: 20 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingHorizontal: 4 },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold' },
+  seeAllBtn: { flexDirection: 'row', alignItems: 'center' },
+  seeAllText: { fontSize: 14, fontWeight: 'bold' },
+  mediaGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
+  gridImage: { width: '48%', aspectRatio: 1, borderRadius: 20 }
 });
